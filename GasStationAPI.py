@@ -4,8 +4,8 @@ import enum
 
 
 class RequestMethod(enum.Enum):
-    GET = 'GET'
-    POST = 'POST'
+    GET = "GET"
+    POST = "POST"
 
 
 class GasStationAPI(object):
@@ -18,7 +18,9 @@ class GasStationAPI(object):
 
         self.__token = None
 
-    def __request(self, path: str, method: RequestMethod = RequestMethod.POST, data: dict = None, send_token: bool = True):
+    def __request(self, path: str, method: RequestMethod = RequestMethod.POST,
+                  data: dict = None,
+                  send_token: bool = True):
         if data is None:
             data = {}
         url = self.__server_address + path
@@ -28,7 +30,7 @@ class GasStationAPI(object):
             headers["Authorization"] = self.__token
 
         # response = requests.post(url, data=json.dumps(data), headers=headers)
-        response = requests.request(str(method.name), url=url, data=json.dumps(data), headers=headers)
+        response = requests.request(str(method.value), url=url, data=json.dumps(data), headers=headers)
 
         if not response.ok:
             if response.status_code == 401:
