@@ -1,6 +1,7 @@
 import requests
 import json
 import enum
+import datetime
 
 
 class RequestMethod(enum.Enum):
@@ -61,14 +62,25 @@ class GasStationAPI(object):
     def get_orders(self):
         response = self.__request("orders/items/", RequestMethod.GET)
         if response.ok:
-            print("Список заказов получен")
+            print("Список заказов загружен")
             return json.loads(response.text)
         return None
 
+    # TODO возвращает 500 ошибку
+    # def get_orders_report(self, start_date, end_date, page: int = 0):
     def get_orders_report(self):
-        response = self.__request("orders/report/")
+        date_format = "%d.%m.%Y %H:%M:%S"
+        # date_format = "%d.%m.%Y"
+        page = 0
+        start_date = datetime.datetime(2021, 1, 1)
+        end_date = datetime.datetime(2022, 1, 1)
+
+        response = self.__request("orders/report/", data={"sdate": start_date.strftime(date_format), "edate": end_date.strftime(date_format), "page": page})
         if response.ok:
             print("Отчет по заказам получен")
-            return json.loads(response.text)
+            print(response.text)
+            return None
+            # return json.loads(response.text)
+
         return None
 
