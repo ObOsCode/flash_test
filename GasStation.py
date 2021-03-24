@@ -29,6 +29,12 @@ class Column(object):
         return self.__fuel_list
 
 
+class Order(object):
+
+    def __init__(self, order_data: Dict):
+        pass
+
+
 class GasStation(object):
 
     next_column_id = 1
@@ -36,6 +42,7 @@ class GasStation(object):
     def __init__(self, extended_id: str):
         self.__extended_id = extended_id
         self.__columns_list: List[Column] = []
+        self.__orders_list: List[Order] = []
         self.__price: Dict[str, float] = {}
 
     def set_price(self, price: Dict[str, float]):
@@ -43,6 +50,9 @@ class GasStation(object):
 
     def get_price(self) -> Dict[str, float]:
         return self.__price
+
+    def add_order(self, order_data: Dict):
+        self.__orders_list.append(Order(order_data))
 
     def add_column(self, column_fuel_list: List[str]):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
