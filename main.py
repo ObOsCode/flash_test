@@ -16,7 +16,7 @@ if __name__ == '__main__':
     gas_station.add_column([FuelType.A_80, FuelType.A_92])
     gas_station.add_column([FuelType.A_80, FuelType.A_92, FuelType.A_92_PREMIUM])
 
-    gas_station.set_price({FuelType.DIESEL.value: 39.52, FuelType.A_80.value: 37.12})
+    gas_station.set_price({FuelType.DIESEL: 39.52, FuelType.A_80: 37.12})
 
     api = GasStationAPI(api_config.SERVER_ADDRESS, api_config.LOGIN, api_config.PASSWORD)
 
@@ -37,7 +37,6 @@ if __name__ == '__main__':
             print("Загружаем список заказов...")
             orders_data = api.get_orders()
             if orders_data:
-                # print("Список заказов загружен:")
                 get_orders_interval = int(orders_data["nextRetryMs"])
 
                 orders_list = orders_data["orders"]
