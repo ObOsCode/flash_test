@@ -36,8 +36,8 @@ class GasStationAPI(object):
             if response.status_code == 401:
                 print("Время сессии истекло. Авторизуйтесь заного")
             else:
-                print("Ощибка: ", response.status_code)
-                print("Ощибка: ", response.text)
+                print("Ошибка: ", response.status_code)
+                print("Ошибка: ", response.text)
 
         return response
 
@@ -62,4 +62,13 @@ class GasStationAPI(object):
         response = self.__request("orders/items/", RequestMethod.GET)
         if response.ok:
             print("Список заказов получен")
-            print(response.content)
+            return json.loads(response.text)
+        return None
+
+    def get_orders_report(self):
+        response = self.__request("orders/report/")
+        if response.ok:
+            print("Отчет по заказам получен")
+            return json.loads(response.text)
+        return None
+
