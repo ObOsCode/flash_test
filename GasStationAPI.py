@@ -11,8 +11,8 @@ class RequestMethod(enum.Enum):
 
 class GasStationAPI(object):
 
-    def __init__(self, server_address: str, login: str, password: str):
-        self.__date_format = "%d.%m.%Y %H:%M:%S"
+    def __init__(self, server_address: str, login: str, password: str, date_format: str):
+        self.__date_format = date_format
 
         self.__server_address = server_address
         self.__login = login
@@ -49,6 +49,13 @@ class GasStationAPI(object):
             self.__token = response.headers["Authorization"]
         return response.ok
 
+    def load_orders(self):
+        response = self.__request("orders/items/", method=RequestMethod.GET)
+        if response.ok:
+            print("Список заказов загружен")
+            return json.loads(response.text)
+        return None
+
     def send_price(self, data: dict) -> bool:
         return self.__request("price/", data=data).ok
 
@@ -63,14 +70,19 @@ class GasStationAPI(object):
         request_url = "orders/canceled/?orderId=" + str(order_id) + "&reason="+reason + "&extendedOrderId=" + str(extended_order_id) + "&extendedDate=" + date_string
         return self.__request(request_url, method=RequestMethod.GET).ok
 
-    def load_orders(self):
-        response = self.__request("orders/items/", method=RequestMethod.GET)
-        if response.ok:
-            print("Список заказов загружен")
-            return json.loads(response.text)
-        return None
+    def send_fueling_status(self, order_id: int,) -> bool:
+        request_url = "orders/fueling/?orderId=" + str(order_id)
+        return self.__request(request_url, method=RequestMethod.GET).ok
 
-    # TODO возвращает 500 ошибку
+    def send_completed_status(self, order_id: int, litre: float, extended_order_id, extended_date) -> bool:
+        date_string = extended_date.strftime(self.__date_format)
+        request_url = "orders/completed/?orderId=" + str(order_id) + "&litre=" + str(litre) + "&extendedOrderId=" + str(extended_order_id) + "&extendedDate=" + date_string
+        return self.__request(request_url, method=RequestMethod.GET).ok
+
+    def send_order_volume(self, order_id: int, litre: float):
+        return self.__request("orders/volume/", data={"orderId": order_id, "litre": litre}).ok
+
+    # возвращает 500 ошибку
     # def get_orders_report(self, start_date, end_date, page: int = 0):
     def load_orders_report(self):
         page = 0
@@ -81,8 +93,11 @@ class GasStationAPI(object):
         if response.ok:
             print("Отчет по заказам получен")
             print(response.text)
-            return None
-            # return json.loads(response.text)
-
+            return json.loads(response.text)
         return None
 
+    # возвращает ошибку Method \"GET\" not allowed
+    def load_station_status(self, apikey: str) -> dict:
+        response = self.__request("station/enable/?apikey=" + apikey, method=RequestMethod.GET)
+        if response.ok:
+            return json.loads(response.text)

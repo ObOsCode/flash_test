@@ -42,6 +42,11 @@ class Order(object):
     CONTRACT_ID_INDIVIDUAL = "Individual"
     CONTRACT_ID_CORPORATION = "Corporation"
 
+    # Количество литров заливаемых за один шаг эмуляции
+    __FUELING_STEP_LITRE = 0.5
+    # Объем полного бака (для эмуляции)
+    __FULL_TANK_VOLUME = 45.0
+
     # TODO передавать не  order_data, а для сделать параметр для каждого атрибута
     def __init__(self, order_data: Dict):
         self.__id = order_data["id"]
@@ -51,6 +56,15 @@ class Order(object):
         self.__fuel_id = order_data["fuelId"]
         self.__column_id = order_data["columnId"]
         self.__price_fuel = float(order_data["priceFuel"])
+
+        # Целевое количество топлива
+        if self.__type == Order.TYPE_FULL_TANK:
+            self.__litre = Order.__FULL_TANK_VOLUME
+        else:
+            self.__litre = float(order_data["litre"])
+
+        # Текущее значение залитого топлива
+        self.__current_litre = 0
 
     def get_id(self) -> int:
         return self.__id
@@ -69,6 +83,22 @@ class Order(object):
 
     def get_price_fuel(self) -> float:
         return self.__price_fuel
+
+    def get_litre(self) -> float:
+        return self.__litre
+
+    def get_current_litre(self) -> float:
+        return self.__current_litre
+
+    def is_completed(self) -> bool:
+        return self.__current_litre >= self.__litre
+
+    # Делает шаг эмуляции
+    def make_fueling_step(self):
+        if self.__litre - self.__current_litre < self.__FUELING_STEP_LITRE:
+            self.__current_litre = self.__litre
+            return
+        self.__current_litre += self.__FUELING_STEP_LITRE
 
 
 class GasStation(object):
@@ -101,14 +131,13 @@ class GasStation(object):
     def is_order_exist(self, order_id: int) -> bool:
         return any(order.get_id() == order_id for order in self.__orders_list)
 
+    def is_order_price_valid(self, order: Order) -> bool:
+        # Проверка на соответствие цены в прайсе и в заказе
+        return self.__price[order.get_fuel_id()] == order.get_price_fuel()
+
     def is_order_supported(self, order: Order) -> bool:
-        # Если цены ни как в прайсе
-        if not self.__price[order.get_fuel_id()] == order.get_price_fuel():
-            return False
         # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
-        return any(
-            order.get_column_id() == column.get_id() and order.get_fuel_id() in column.get_fuel_list() for column in
-            self.__columns_list)
+        return any(order.get_column_id() == column.get_id() and order.get_fuel_id() in column.get_fuel_list() for column in self.__columns_list)
 
     def add_column(self, column_fuel_list: List[str]):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
