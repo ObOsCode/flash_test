@@ -43,25 +43,26 @@ class Order(object):
     CONTRACT_ID_CORPORATION = "Corporation"
 
     # Количество литров заливаемых за один шаг эмуляции
-    __FUELING_STEP_LITRE = 0.5
+    __FUELING_STEP_LITRE = 1.2
     # Объем полного бака (для эмуляции)
     __FULL_TANK_VOLUME = 45.0
 
-    # TODO передавать не  order_data, а для сделать параметр для каждого атрибута
-    def __init__(self, order_data: Dict):
-        self.__id = order_data["id"]
-        self.__type = order_data["orderType"]
-        self.__status = order_data["status"]
-        self.__contract_id = order_data["ContractId"]
-        self.__fuel_id = order_data["fuelId"]
-        self.__column_id = order_data["columnId"]
-        self.__price_fuel = float(order_data["priceFuel"])
+    def __init__(self, order_id: int, order_type: str, status: str, contract_id: str, fuel_id: str, column_id: int,
+                 price_fuel: float, litre: float):
+
+        self.__id = order_id
+        self.__type = order_type
+        self.__status = status
+        self.__contract_id = contract_id
+        self.__fuel_id = fuel_id
+        self.__column_id = column_id
+        self.__price_fuel = price_fuel
 
         # Целевое количество топлива
         if self.__type == Order.TYPE_FULL_TANK:
             self.__litre = Order.__FULL_TANK_VOLUME
         else:
-            self.__litre = float(order_data["litre"])
+            self.__litre = litre
 
         # Текущее значение залитого топлива
         self.__current_litre = 0
@@ -119,8 +120,8 @@ class GasStation(object):
     def get_orders_list(self) -> List[Order]:
         return self.__orders_list
 
-    def add_order(self, order_data: Dict):
-        self.__orders_list.append(Order(order_data))
+    def add_order(self, order: Order):
+        self.__orders_list.append(order)
 
     def remove_order(self, order_id: int):
         for order in self.__orders_list:
@@ -137,7 +138,8 @@ class GasStation(object):
 
     def is_order_supported(self, order: Order) -> bool:
         # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
-        return any(order.get_column_id() == column.get_id() and order.get_fuel_id() in column.get_fuel_list() for column in self.__columns_list)
+        return any(order.get_column_id() == column.get_id() and
+                   order.get_fuel_id() in column.get_fuel_list() for column in self.__columns_list)
 
     def add_column(self, column_fuel_list: List[str]):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))

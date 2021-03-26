@@ -1,9 +1,17 @@
 import time
 import datetime
+import sys
 
 import api_config
 from GasStationAPI import GasStationAPI
 from GasStation import GasStation, FuelType, Order
+
+
+def exception_hook(exctype, value, traceback):
+    if exctype == KeyboardInterrupt:
+        print("Программа завершена пользователем")
+    else:
+        sys.__excepthook__(exctype, value, traceback)
 
 
 def millis():
@@ -11,12 +19,20 @@ def millis():
 
 
 def update_orders_list(orders_list_data: []):
-    print(orders_list_data)
 
     for order_data in orders_list_data:
         order_id = order_data["id"]
         if not gas_station.is_order_exist(order_id):
-            gas_station.add_order(order_data)
+            order_type = order_data["orderType"]
+            status = order_data["status"]
+            contract_id = order_data["ContractId"]
+            fuel_id = order_data["fuelId"]
+            column_id = order_data["columnId"]
+            price_fuel = float(order_data["priceFuel"])
+            litre = float(order_data["litre"])
+            new_order = Order(order_id, order_type, status, contract_id, fuel_id, column_id, price_fuel, litre)
+
+            gas_station.add_order(new_order)
 
 
 def update_orders_status():
@@ -61,18 +77,25 @@ def update_orders_status():
 
         elif order.get_status() == Order.STATUS_FUELING:
             if order.is_completed():
-                print("Заказ", order.get_id(), "заправка завершена")
+                print("Заправка завершена. Заказ", order.get_id(), "выполнен. Отсылаем статус о завершени заказа...")
                 if api.send_completed_status(order.get_id(), order.get_litre(), order.get_id(), datetime.date.today()):
                     gas_station.remove_order(order.get_id())
                 continue
 
-            print("Заказ", order.get_id(), "выполняется. Залито", order.get_current_litre(), "литров из ", order.get_litre())
-            api.send_order_volume(order.get_id(), order.get_current_litre())
+            print("Заказ", order.get_id(), "выполняется. Залито", order.get_current_litre(),
+                  "литров из ", order.get_litre())
+
+            print("Отсылаем информацию о количестве залитого топлива по заказу", order.get_id(), "...")
+            if api.send_order_volume(order.get_id(), order.get_current_litre()):
+                print("Информация по залитому топливу отпралена")
+
             # Шаг эмуляции заправки
             order.make_fueling_step()
 
 
 if __name__ == '__main__':
+
+    sys.excepthook = exception_hook
 
     gas_station = GasStation(extended_id="00001")
 
@@ -87,6 +110,7 @@ if __name__ == '__main__':
     if api.auth():
         print("Успешная авторизация")
     else:
+        print("Не удалось авторизоваться")
         exit(1)
 
     print("Отсылаем прайс...")
@@ -111,6 +135,8 @@ if __name__ == '__main__':
             print("Загружаем список заказов...")
             orders_data = api.load_orders()
             if orders_data:
+                print("Список заказов загружен")
+                print(orders_data)
                 load_orders_interval = int(orders_data["nextRetryMs"])
 
                 # Обновляем список заказов
