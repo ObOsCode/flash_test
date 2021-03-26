@@ -145,7 +145,7 @@ class GasStation(object):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
         GasStation.next_column_id += 1
 
-    # Конфигурацию лучше формировать функцией снаружи
+    # TODO Конфигурацию лучше формировать функцией снаружи
     def get_configuration(self) -> dict:
         configuration = {"StationExtendedId": self.__extended_id}
         columns_config = {}

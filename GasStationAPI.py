@@ -12,13 +12,15 @@ class RequestMethod(enum.Enum):
 class GasStationAPI(object):
 
     def __init__(self, server_address: str, login: str, password: str, date_format: str, timeout: int = 5):
-        self.__date_format = date_format
-        self.__time_out = timeout
         self.__server_address = server_address
         self.__login = login
         self.__password = password
 
+        self.__date_format = date_format
+        self.__time_out = timeout
+
         self.__token = None
+        self.__is_auth = False
 
     def __request(self, path: str, method: RequestMethod = RequestMethod.POST,
                   data: dict = None,
@@ -38,6 +40,7 @@ class GasStationAPI(object):
 
             if not response.ok:
                 if response.status_code == 401:
+                    self.__is_auth = False
                     print("Время сессии истекло. Авторизуйтесь заного")
                 else:
                     print("Ошибка: ", response.status_code)
@@ -47,11 +50,15 @@ class GasStationAPI(object):
 
         return response
 
+    def is_auth(self) -> bool:
+        return self.__is_auth
+
     def auth(self) -> bool:
         data = {"login": self.__login, "code": self.__password}
         response = self.__request("auth/", data=data, send_token=False)
         if response and response.ok:
             self.__token = response.headers["Authorization"]
+            self.__is_auth = True
             return True
         return False
 

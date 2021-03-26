@@ -1,4 +1,3 @@
-import time
 import datetime
 import sys
 
@@ -14,8 +13,8 @@ def exception_hook(exctype, value, traceback):
         sys.__excepthook__(exctype, value, traceback)
 
 
-def millis():
-    return int(round(time.time() * 1000))
+def timestamp():
+    return int(round(datetime.datetime.now().timestamp() * 1000))
 
 
 def update_orders_list(orders_list_data: []):
@@ -43,12 +42,12 @@ def update_orders_status():
         #     continue
 
         if order.get_status() == Order.STATUS_ACCEPT_ORDER:
-            # Если цена в заказе и в прайсе не совпадает
+            # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
                 api.send_configuration(gas_station.get_configuration())
                 continue
 
-            # Если заказ не поддерживается АСУ...
+            # Если заказ не поддерживается АСУ
             if not gas_station.is_order_supported(order):
                 if api.send_canceled_status(order.get_id(), "Заказ не поддерживается системой", order.get_id(), datetime.date.today()):
                     print("Заказ отменен. Заказ не поддерживается системой")
@@ -97,54 +96,62 @@ if __name__ == '__main__':
 
     sys.excepthook = exception_hook
 
+    # Создаем объект модели АЗС
     gas_station = GasStation(extended_id="00001")
-
+    # Добавляем колонки
     gas_station.add_column([FuelType.A_80, FuelType.A_92, FuelType.A_95])
     gas_station.add_column([FuelType.A_92_PREMIUM, FuelType.A_95_PREMIUM])
-
+    # Устанавливаем цены
     gas_station.set_price({FuelType.DIESEL: 39.52, FuelType.A_80: 37.12})
 
+    # Создаем объект для работы с API
     api = GasStationAPI(api_config.SERVER_ADDRESS, api_config.LOGIN, api_config.PASSWORD, api_config.DATE_FORMAT)
-
-    print("Пробуем авторизоваться...")
-    if api.auth():
-        print("Успешная авторизация")
-    else:
-        print("Не удалось авторизоваться")
-        exit(1)
-
-    print("Отсылаем прайс...")
-    if api.send_price(gas_station.get_price()):
-        print("Прайс передан")
-
-    print("Отсылаем конфигурацию...")
-    if api.send_configuration(gas_station.get_configuration()):
-        print("Конфигурация передана")
 
     # Ошибки
     # orders_report = api.load_orders_report()
     # api.load_station_status("")
 
     # Главный цикл программы
-    load_orders_last_time = millis()
-    load_orders_interval = 0
+    last_step_time = timestamp()
+    loop_interval = 0
 
     while True:
-        cur_time = millis()
-        if cur_time - load_orders_last_time > load_orders_interval:
+        cur_time = timestamp()
+        # Отправляем запрос не чаще loop_interval
+        if cur_time - last_step_time > loop_interval:
+
+            # Если не авторизованы отправляем запрос на авторизацию, прайс и конфигурацию
+            if not api.is_auth():
+                print("Пробуем авторизоваться...")
+                if api.auth():
+                    print("Успешная авторизация")
+                else:
+                    print("Не удалось авторизоваться")
+                    continue
+
+                print("Отсылаем прайс...")
+                if api.send_price(gas_station.get_price()):
+                    print("Прайс передан")
+
+                print("Отсылаем конфигурацию...")
+                if api.send_configuration(gas_station.get_configuration()):
+                    print("Конфигурация передана")
+
+            print("----------------------------------------------------------------------")
             print("Загружаем список заказов...")
             orders_data = api.load_orders()
             if orders_data:
                 print("Список заказов загружен")
                 print(orders_data)
-                load_orders_interval = int(orders_data["nextRetryMs"])
+                # Обновляем интервал цикла на полученый от сервера
+                loop_interval = int(orders_data["nextRetryMs"])
 
                 # Обновляем список заказов
                 update_orders_list(orders_data["orders"])
-
             else:
-                load_orders_interval = 5000
-            load_orders_last_time = cur_time
+                # Если интервал не получен устанавливаем по умолчанию 5000 мс
+                loop_interval = 5000
+            last_step_time = cur_time
 
             # Обновляем статус заказов
             update_orders_status()
