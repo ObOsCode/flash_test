@@ -23,6 +23,7 @@ class GasStationAPI(object):
         self.__is_auth = False
 
     def __request(self, path: str, method: RequestMethod = RequestMethod.POST,
+                  params: dict = None,
                   data: dict = None,
                   send_token: bool = True):
         if data is None:
@@ -35,8 +36,8 @@ class GasStationAPI(object):
 
         response = None
         try:
-            response = requests.request(str(method.value), url=url, data=json.dumps(data), headers=headers,
-                                        timeout=self.__time_out)
+            response = requests.request(str(method.value), url=url, params=params, data=json.dumps(data),
+                                        headers=headers, timeout=self.__time_out)
 
             if not response.ok:
                 if response.status_code == 401:
@@ -62,7 +63,7 @@ class GasStationAPI(object):
             return True
         return False
 
-    def load_orders(self):
+    def load_orders(self) -> dict or None:
         response = self.__request("orders/items/", method=RequestMethod.GET)
         if response and response.ok:
             return json.loads(response.text)
@@ -74,6 +75,10 @@ class GasStationAPI(object):
 
     def send_configuration(self, data: dict) -> bool:
         response = self.__request("station/", data=data)
+        return response and response.ok
+
+    def send_order_volume(self, order_id: int, litre: float):
+        response = self.__request("orders/volume/", data={"orderId": order_id, "litre": litre})
         return response and response.ok
 
     def send_accept_status(self, order_id: int) -> bool:
@@ -90,6 +95,7 @@ class GasStationAPI(object):
         request_url = "orders/fueling/?orderId=" + str(order_id)
         response = self.__request(request_url, method=RequestMethod.GET)
         return response and response.ok
+    # TODO возвращает 502 ошибку
 
     def send_completed_status(self, order_id: int, litre: float, extended_order_id, extended_date) -> bool:
         date_string = extended_date.strftime(self.__date_format)
@@ -98,9 +104,45 @@ class GasStationAPI(object):
         response = self.__request(request_url, method=RequestMethod.GET)
         return response and response.ok
 
-    def send_order_volume(self, order_id: int, litre: float):
-        response = self.__request("orders/volume/", data={"orderId": order_id, "litre": litre})
-        return response and response.ok
+    # "Columns": {
+    # 1: {
+
+    #     // статус ТРК
+    #     PumpStatus Status
+
+    #     // кол - во литров
+    #     double Litre
+
+    #     // идентификатор заказ в АСУ
+    #     string ExtendedId
+
+    #     // идентификатор топлива
+    #     string FuelId
+
+    #     // Цена по стелле
+    #     Double BasePriceFuel
+
+    #     // сумма заказа
+    #     double Sum,
+
+    #     // детализация ошибки string
+    #     ErrorMessage
+    # },
+    # 4: {
+    #     .....
+    # }
+    #     ....N
+    # }
+
+    # Free – ТКС свободна
+    # Fueling – идет налив
+    # Completed – налив завершен иожидает оплаты
+    # Unavailable – ошибка на ТРК, ТРК не доступна
+
+    # def post_pay(self, data: str):
+    #     request_url = "api/orders/items"
+    #     response = self.__request(request_url, method=RequestMethod.GET)
+    #     return response and response.ok
 
     # TODO возвращает 500 ошибку
     # def get_orders_report(self, start_date, end_date, page: int = 0):

@@ -111,6 +111,16 @@ class GasStation(object):
         self.__orders_list: List[Order] = []
         self.__price: Dict[str, float] = {}
 
+    def get_id(self):
+        return self.__extended_id
+
+    def get_columns_list(self) -> List[Column]:
+        return self.__columns_list
+
+    def add_column(self, column_fuel_list: List[str]):
+        self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
+        GasStation.next_column_id += 1
+
     def set_price(self, price: Dict[str, float]):
         self.__price = price
 
@@ -140,18 +150,3 @@ class GasStation(object):
         # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
         return any(order.get_column_id() == column.get_id() and
                    order.get_fuel_id() in column.get_fuel_list() for column in self.__columns_list)
-
-    def add_column(self, column_fuel_list: List[str]):
-        self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
-        GasStation.next_column_id += 1
-
-    # TODO Конфигурацию лучше формировать функцией снаружи
-    def get_configuration(self) -> dict:
-        configuration = {"StationExtendedId": self.__extended_id}
-        columns_config = {}
-        for column in self.__columns_list:
-            columns_config[column.get_id()] = {"Fuels": column.get_fuel_list()}
-
-        configuration["Columns"] = columns_config
-
-        return configuration

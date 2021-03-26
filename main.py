@@ -17,6 +17,16 @@ def timestamp():
     return int(round(datetime.datetime.now().timestamp() * 1000))
 
 
+def create_station_configuration() -> dict:
+    configuration = {"StationExtendedId": gas_station.get_id()}
+    columns_config = {}
+    for column in gas_station.get_columns_list():
+        columns_config[column.get_id()] = {"Fuels": column.get_fuel_list()}
+
+    configuration["Columns"] = columns_config
+    return configuration
+
+
 def update_orders_list(orders_list_data: []):
 
     for order_data in orders_list_data:
@@ -44,10 +54,14 @@ def update_orders_status():
         if order.get_status() == Order.STATUS_ACCEPT_ORDER:
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
-                api.send_configuration(gas_station.get_configuration())
+                if api.send_canceled_status(order.get_id(), "Цена в заказе не совпадает с прайсом", order.get_id(), datetime.date.today()):
+                    print("Заказ отменен. Цена в заказе не совпадает с прайсом")
+                    gas_station.remove_order(order.get_id())
+                # Обновляем прайс на сервере
+                api.send_price(gas_station.get_price())
                 continue
 
-            # Если заказ не поддерживается АСУ
+            # Если заказ не поддерживается
             if not gas_station.is_order_supported(order):
                 if api.send_canceled_status(order.get_id(), "Заказ не поддерживается системой", order.get_id(), datetime.date.today()):
                     print("Заказ отменен. Заказ не поддерживается системой")
@@ -134,7 +148,7 @@ if __name__ == '__main__':
                     print("Прайс передан")
 
                 print("Отсылаем конфигурацию...")
-                if api.send_configuration(gas_station.get_configuration()):
+                if api.send_configuration(create_station_configuration()):
                     print("Конфигурация передана")
 
             print("----------------------------------------------------------------------")
