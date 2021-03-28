@@ -60,13 +60,14 @@ def update_orders_status():
     for order in gas_station.get_orders_list():
 
         # TEST ORDER 1863
-        # if not order.get_id() == 1863:
-        #     continue
+        if not order.get_id() == 1862:
+            continue
 
         print("***********************")
         print("Заказ id:", order.get_id())
 
         if order.get_status() == Order.STATUS_ACCEPT_ORDER:
+            print(" Заказ", order.get_id(), "ожидает подтверждения")
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
                 if api.send_canceled_status(order.get_id(), "Цена в заказе не совпадает с прайсом", order.get_id(), datetime.date.today()):
