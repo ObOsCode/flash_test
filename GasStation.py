@@ -18,15 +18,27 @@ class FuelType(object):
 
 class Column(object):
 
+    STATUS_FREE = "Free"
+    STATUS_FUELING = "Fueling"
+    STATUS_COMPLETED = "Completed"
+    STATUS_UNAVAILABLE = "Unavailable"
+
     def __init__(self, column_id: int, fuel_list: List[str]):
         self.__id = column_id
         self.__fuel_list = fuel_list
+        self.__status = Column.STATUS_FREE
 
     def get_id(self) -> int:
         return self.__id
 
     def get_fuel_list(self) -> List[str]:
         return self.__fuel_list
+
+    def set_status(self, status: str):
+        self.__status = status
+
+    def get_status(self) -> str:
+        return self.__status
 
 
 class Order(object):
@@ -103,6 +115,7 @@ class Order(object):
 
 
 class GasStation(object):
+
     next_column_id = 1
 
     def __init__(self, extended_id: str):

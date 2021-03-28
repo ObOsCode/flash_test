@@ -29,6 +29,7 @@ def create_station_configuration() -> dict:
 
 def update_orders_list(orders_list_data: []):
 
+    print(orders_list_data)
     print("Проверяем есть ли новые заказы...")
 
     new_orders_count = 0
@@ -46,7 +47,7 @@ def update_orders_list(orders_list_data: []):
             new_order = Order(order_id, order_type, status, contract_id, fuel_id, column_id, price_fuel, litre)
             gas_station.add_order(new_order)
 
-            print(" Новый заказ (id:", order_id, "):", fuel_id, litre, "литров")
+            print(" Новый заказ (id:", order_id, "):", fuel_id, litre, "литров.", "Колонка №", column_id)
             new_orders_count += 1
 
     if new_orders_count == 0:
@@ -68,6 +69,7 @@ def update_orders_status():
 
         if order.get_status() == Order.STATUS_ACCEPT_ORDER:
             print(" Заказ", order.get_id(), "ожидает подтверждения")
+
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
                 if api.send_canceled_status(order.get_id(), "Цена в заказе не совпадает с прайсом", order.get_id(), datetime.date.today()):
@@ -95,6 +97,9 @@ def update_orders_status():
 
         elif order.get_status() == Order.STATUS_WAITING_REFUELING:
             print(" Заказ", order.get_id(), "ожидает заливки")
+
+            # TODO  Добавить проверку есть ли свободные колонки для выполнения этого заказа !!!!!
+            # TODO  Добавить статусы колонкам
 
             if not api.send_fueling_status(order.get_id()):
                 if api.send_canceled_status(order.get_id(), "Сервер отклонил заказ", order.get_id(), datetime.date.today()):
