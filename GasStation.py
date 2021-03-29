@@ -129,7 +129,8 @@ class Order(object):
         self.__current_litre += self.__FUELING_STEP_LITRE
 
     def __str__(self):
-        return "(id:" + str(self.__id) + ") Топливо: " + self.__fuel_id + " " + str(self.__litre) + " литров. Колонка № " + str(self.__column_id)
+        return "(id:" + str(self.__id) + ") Топливо: " + self.__fuel_id + " " + str(self.__litre) + " литров. Колонка № " + str(self.__column_id) + \
+               " Статус: " + self.__status
 
 
 class GasStation(object):
@@ -162,6 +163,11 @@ class GasStation(object):
     def orders_list(self) -> List[Order]:
         return self.__orders_list
 
+    def get_column_by_id(self, column_id: int) -> Column:
+        for column in self.__columns_list:
+            if column.id == column_id:
+                return column
+
     def add_column(self, column_fuel_list: List[str]):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
         GasStation.next_column_id += 1
@@ -184,5 +190,7 @@ class GasStation(object):
 
     def is_order_supported(self, order: Order) -> bool:
         # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
-        return any(order.column_id == column.id and
-                   order.fuel_id in column.fuel_list for column in self.__columns_list)
+        return any(order.column_id == column.id and order.fuel_id in column.fuel_list for column in self.__columns_list)
+
+    def emulation_step(self):
+        [order.make_fueling_step() for order in self.__orders_list if order.status == Order.STATUS_FUELING]

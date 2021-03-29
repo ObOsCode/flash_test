@@ -3,7 +3,7 @@ import sys
 
 import api_config
 from GasStationAPI import GasStationAPI
-from GasStation import GasStation, FuelType, Order
+from GasStation import GasStation, FuelType, Order, Column
 
 
 def exception_hook(exctype, value, traceback):
@@ -47,6 +47,9 @@ def update_orders_list(orders_list_data: []):
             new_order = Order(order_id, order_type, status, contract_id, fuel_id, column_id, price_fuel, litre)
             gas_station.add_order(new_order)
 
+            if new_order.status == Order.STATUS_FUELING:
+                gas_station.get_column_by_id(new_order.column_id).status = Column.STATUS_FUELING
+
             print(" Новый заказ: ", new_order)
             new_orders_count += 1
 
@@ -56,19 +59,20 @@ def update_orders_list(orders_list_data: []):
 
 def update_orders_status():
 
-    print("Проверяем статусы заказов...")
+    print("Обновляем статусы заказов...")
 
     for order in gas_station.orders_list:
 
-        # TEST ORDER 1863
-        if not order.id == 1862:
-            continue
+        # FOR TEST
+        # if not (order.id == 1875 or order.id == 1878):
+        #     continue
 
-        print("***********************")
-        print("Заказ id:", order.id)
+        print("***************************************************************")
+        print("*** Заказ: ", order, "***")
+        print("***************************************************************")
 
         if order.status == Order.STATUS_ACCEPT_ORDER:
-            print(" Заказ №", order.id, "ожидает подтверждения")
+            print(" Заказ ожидает подтверждения")
 
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
@@ -94,12 +98,14 @@ def update_orders_status():
                 continue
 
             order.status = Order.STATUS_WAITING_REFUELING
+            print(" Заказ подтвержден")
 
         elif order.status == Order.STATUS_WAITING_REFUELING:
-            print(" Заказ №", order.id, "ожидает заливки")
+            print(" Заказ ожидает заливки")
 
-            # TODO  Добавить проверку есть ли свободные колонки для выполнения этого заказа !!!!!
-            # TODO  Добавить статусы колонкам
+            if not gas_station.get_column_by_id(order.column_id).status == Column.STATUS_FREE:
+                print(" Колонка занята. Ждем завершения предыдущего заказа")
+                continue
 
             if not api.send_fueling_status(order.id):
                 if api.send_canceled_status(order.id, "Сервер отклонил заказ", order.id, datetime.date.today()):
@@ -108,23 +114,23 @@ def update_orders_status():
                 continue
 
             order.status = Order.STATUS_FUELING
+            print(" Начинаем заливку")
 
         elif order.status == Order.STATUS_FUELING:
             if order.is_completed:
-                print(" Заправка завершена. Заказ № ", order.id, "выполнен. Отсылаем статус о завершени заказа...")
+                print(" Заправка завершена. Заказ выполнен. Отсылаем статус о завершени заказа...")
                 if api.send_completed_status(order.id, order.litre, order.id, datetime.date.today()):
                     gas_station.remove_order(order.id)
+                    gas_station.get_column_by_id(order.column_id).status = Column.STATUS_FREE
                 continue
 
-            print(" Заказ №", order.id, "выполняется. Залито", order.current_litre,
-                  "литров из", order.litre)
+            gas_station.get_column_by_id(order.column_id).status = Column.STATUS_FUELING
+
+            print(" Заказ выполняется. Залито", order.current_litre, "литров из", order.litre)
 
             print("Отсылаем информацию о количестве залитого топлива по заказу", order.id, "...")
             if api.send_order_volume(order.id, order.current_litre):
                 print(" Информация по залитому топливу отпралена")
-
-            # Шаг эмуляции заправки
-            order.make_fueling_step()
 
 
 if __name__ == '__main__':
@@ -172,7 +178,7 @@ if __name__ == '__main__':
                 if api.send_configuration(create_station_configuration()):
                     print(" Конфигурация передана")
 
-            print("----------------------------------------------------------------------")
+            print("\n----------------------------------------------------------------------")
             print("Загружаем список заказов...")
             orders_data = api.load_orders()
             if orders_data:
@@ -189,3 +195,6 @@ if __name__ == '__main__':
 
             # Обновляем статус заказов
             update_orders_status()
+
+            # Шаг эмуляции заправки
+            gas_station.emulation_step()
