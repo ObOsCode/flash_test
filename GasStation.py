@@ -115,8 +115,7 @@ class Order(object):
         self.__current_litre += self.__FUELING_STEP_LITRE
 
     def __str__(self):
-        # TODO переопределить str для вывода в консоль
-        return "Order id: " + str(self.__id)
+        return "(id:" + str(self.__id) + ") Топливо: " + self.__fuel_id + " " + str(self.__litre) + " литров. Колонка № " + str(self.__column_id)
 
 
 class GasStation(object):

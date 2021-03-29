@@ -29,7 +29,7 @@ def create_station_configuration() -> dict:
 
 def update_orders_list(orders_list_data: []):
 
-    print(orders_list_data)
+    # print(orders_list_data)
     print("Проверяем есть ли новые заказы...")
 
     new_orders_count = 0
@@ -47,7 +47,7 @@ def update_orders_list(orders_list_data: []):
             new_order = Order(order_id, order_type, status, contract_id, fuel_id, column_id, price_fuel, litre)
             gas_station.add_order(new_order)
 
-            print(" Новый заказ (id:", order_id, "):", fuel_id, litre, "литров.", "Колонка №", column_id)
+            print(" Новый заказ: ", new_order)
             new_orders_count += 1
 
     if new_orders_count == 0:
@@ -68,7 +68,7 @@ def update_orders_status():
         print("Заказ id:", order.get_id())
 
         if order.get_status() == Order.STATUS_ACCEPT_ORDER:
-            print(" Заказ", order.get_id(), "ожидает подтверждения")
+            print(" Заказ №", order.get_id(), "ожидает подтверждения")
 
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
@@ -96,7 +96,7 @@ def update_orders_status():
             order.set_status(Order.STATUS_WAITING_REFUELING)
 
         elif order.get_status() == Order.STATUS_WAITING_REFUELING:
-            print(" Заказ", order.get_id(), "ожидает заливки")
+            print(" Заказ №", order.get_id(), "ожидает заливки")
 
             # TODO  Добавить проверку есть ли свободные колонки для выполнения этого заказа !!!!!
             # TODO  Добавить статусы колонкам
@@ -111,13 +111,13 @@ def update_orders_status():
 
         elif order.get_status() == Order.STATUS_FUELING:
             if order.is_completed():
-                print(" Заправка завершена. Заказ", order.get_id(), "выполнен. Отсылаем статус о завершени заказа...")
+                print(" Заправка завершена. Заказ № ", order.get_id(), "выполнен. Отсылаем статус о завершени заказа...")
                 if api.send_completed_status(order.get_id(), order.get_litre(), order.get_id(), datetime.date.today()):
                     gas_station.remove_order(order.get_id())
                 continue
 
-            print(" Заказ", order.get_id(), "выполняется. Залито", order.get_current_litre(),
-                  "литров из ", order.get_litre())
+            print(" Заказ №", order.get_id(), "выполняется. Залито", order.get_current_litre(),
+                  "литров из", order.get_litre())
 
             print("Отсылаем информацию о количестве залитого топлива по заказу", order.get_id(), "...")
             if api.send_order_volume(order.get_id(), order.get_current_litre()):
