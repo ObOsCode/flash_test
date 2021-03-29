@@ -51,6 +51,7 @@ class GasStationAPI(object):
 
         return response
 
+    @property
     def is_auth(self) -> bool:
         return self.__is_auth
 

@@ -18,10 +18,10 @@ def timestamp():
 
 
 def create_station_configuration() -> dict:
-    configuration = {"StationExtendedId": gas_station.get_id()}
+    configuration = {"StationExtendedId": gas_station.id}
     columns_config = {}
-    for column in gas_station.get_columns_list():
-        columns_config[column.get_id()] = {"Fuels": column.get_fuel_list()}
+    for column in gas_station.columns_list:
+        columns_config[column.id] = {"Fuels": column.fuel_list}
 
     configuration["Columns"] = columns_config
     return configuration
@@ -58,69 +58,69 @@ def update_orders_status():
 
     print("Проверяем статусы заказов...")
 
-    for order in gas_station.get_orders_list():
+    for order in gas_station.orders_list:
 
         # TEST ORDER 1863
-        if not order.get_id() == 1862:
+        if not order.id == 1862:
             continue
 
         print("***********************")
-        print("Заказ id:", order.get_id())
+        print("Заказ id:", order.id)
 
-        if order.get_status() == Order.STATUS_ACCEPT_ORDER:
-            print(" Заказ №", order.get_id(), "ожидает подтверждения")
+        if order.status == Order.STATUS_ACCEPT_ORDER:
+            print(" Заказ №", order.id, "ожидает подтверждения")
 
             # Если цены в заказе и в прайсе не совпадают
             if not gas_station.is_order_price_valid(order):
-                if api.send_canceled_status(order.get_id(), "Цена в заказе не совпадает с прайсом", order.get_id(), datetime.date.today()):
+                if api.send_canceled_status(order.id, "Цена в заказе не совпадает с прайсом", order.id, datetime.date.today()):
                     print(" Заказ отменен. Цена в заказе не совпадает с прайсом")
-                    gas_station.remove_order(order.get_id())
+                    gas_station.remove_order(order.id)
                 # Обновляем прайс на сервере
-                api.send_price(gas_station.get_price())
+                api.send_price(gas_station.price)
                 continue
 
             # Если заказ не поддерживается
             if not gas_station.is_order_supported(order):
-                if api.send_canceled_status(order.get_id(), "Заказ не поддерживается системой", order.get_id(), datetime.date.today()):
+                if api.send_canceled_status(order.id, "Заказ не поддерживается системой", order.id, datetime.date.today()):
                     print(" Заказ отменен. Заказ не поддерживается системой")
-                    gas_station.remove_order(order.get_id())
+                    gas_station.remove_order(order.id)
                 continue
 
             # Если не удалось изменить статус на ACCEPT
-            if not api.send_accept_status(order.get_id()):
-                if api.send_canceled_status(order.get_id(), "Сервер отклонил заказ", order.get_id(), datetime.date.today()):
+            if not api.send_accept_status(order.id):
+                if api.send_canceled_status(order.id, "Сервер отклонил заказ", order.id, datetime.date.today()):
                     print(" Заказ отменен. Сервер отклонил заказ")
-                    gas_station.remove_order(order.get_id())
+                    gas_station.remove_order(order.id)
                 continue
 
-            order.set_status(Order.STATUS_WAITING_REFUELING)
+            order.status = Order.STATUS_WAITING_REFUELING
 
-        elif order.get_status() == Order.STATUS_WAITING_REFUELING:
-            print(" Заказ №", order.get_id(), "ожидает заливки")
+        elif order.status == Order.STATUS_WAITING_REFUELING:
+            print(" Заказ №", order.id, "ожидает заливки")
 
             # TODO  Добавить проверку есть ли свободные колонки для выполнения этого заказа !!!!!
             # TODO  Добавить статусы колонкам
 
-            if not api.send_fueling_status(order.get_id()):
-                if api.send_canceled_status(order.get_id(), "Сервер отклонил заказ", order.get_id(), datetime.date.today()):
+            if not api.send_fueling_status(order.id):
+                if api.send_canceled_status(order.id, "Сервер отклонил заказ", order.id, datetime.date.today()):
                     print(" Заказ отменен. Сервер отклонил заказ")
-                    gas_station.remove_order(order.get_id())
+                    gas_station.remove_order(order.id)
                 continue
 
-            order.set_status(Order.STATUS_FUELING)
+            order.status = Order.STATUS_FUELING
 
-        elif order.get_status() == Order.STATUS_FUELING:
-            if order.is_completed():
-                print(" Заправка завершена. Заказ № ", order.get_id(), "выполнен. Отсылаем статус о завершени заказа...")
-                if api.send_completed_status(order.get_id(), order.get_litre(), order.get_id(), datetime.date.today()):
-                    gas_station.remove_order(order.get_id())
+        elif order.status == Order.STATUS_FUELING:
+            if order.is_completed:
+                print(" Заправка завершена. Заказ № ", order.id, "выполнен. Отсылаем статус о завершени заказа...")
+                if api.send_completed_status(order.id, order.litre, order.id, datetime.date.today()):
+                    gas_station.remove_order(order.id)
                 continue
 
-            print(" Заказ №", order.get_id(), "выполняется. Залито", order.get_current_litre(),
-                  "литров из", order.get_litre())
+            print(" Заказ №", order.id, "выполняется. Залито", order.current_litre,
+                  "литров из", order.litre)
 
-            print("Отсылаем информацию о количестве залитого топлива по заказу", order.get_id(), "...")
-            if api.send_order_volume(order.get_id(), order.get_current_litre()):
+            print("Отсылаем информацию о количестве залитого топлива по заказу", order.id, "...")
+            if api.send_order_volume(order.id, order.current_litre):
                 print(" Информация по залитому топливу отпралена")
 
             # Шаг эмуляции заправки
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     gas_station.add_column([FuelType.A_80, FuelType.A_92, FuelType.A_95])
     gas_station.add_column([FuelType.A_92_PREMIUM, FuelType.A_95_PREMIUM])
     # Устанавливаем цены
-    gas_station.set_price({FuelType.DIESEL: 39.52, FuelType.A_80: 37.12})
+    gas_station.price = {FuelType.DIESEL: 39.52, FuelType.A_80: 37.12}
 
     # Создаем объект для работы с API
     api = GasStationAPI(api_config.SERVER_ADDRESS, api_config.LOGIN, api_config.PASSWORD, api_config.DATE_FORMAT)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
         if cur_time - last_step_time > loop_interval:
 
             # Если не авторизованы отправляем запрос на авторизацию, прайс и конфигурацию
-            if not api.is_auth():
+            if not api.is_auth:
                 print("Пробуем авторизоваться...")
                 if api.auth():
                     print(" Успешная авторизация")
@@ -165,7 +165,7 @@ if __name__ == '__main__':
                     continue
 
                 print("Отсылаем прайс...")
-                if api.send_price(gas_station.get_price()):
+                if api.send_price(gas_station.price):
                     print(" Прайс передан")
 
                 print("Отсылаем конфигурацию...")

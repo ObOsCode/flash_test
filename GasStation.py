@@ -28,17 +28,21 @@ class Column(object):
         self.__fuel_list = fuel_list
         self.__status = Column.STATUS_FREE
 
-    def get_id(self) -> int:
+    @property
+    def id(self) -> int:
         return self.__id
 
-    def get_fuel_list(self) -> List[str]:
+    @property
+    def fuel_list(self) -> List[str]:
         return self.__fuel_list
 
-    def set_status(self, status: str):
-        self.__status = status
-
-    def get_status(self) -> str:
+    @property
+    def status(self) -> str:
         return self.__status
+
+    @status.setter
+    def status(self, status: str):
+        self.__status = status
 
 
 class Order(object):
@@ -80,30 +84,40 @@ class Order(object):
         self.__current_litre = 0
 
     # TODO Доступ к свойствам сделать через декораторы
-    def get_id(self) -> int:
+
+    @property
+    def id(self) -> int:
         return self.__id
 
-    def get_status(self) -> str:
+    @property
+    def status(self) -> str:
         return self.__status
 
-    def set_status(self, status: str):
+    @status.setter
+    def status(self, status: str):
         self.__status = status
 
-    def get_fuel_id(self) -> str:
+    @property
+    def fuel_id(self) -> str:
         return self.__fuel_id
 
-    def get_column_id(self) -> int:
+    @property
+    def column_id(self) -> int:
         return self.__column_id
 
-    def get_price_fuel(self) -> float:
+    @property
+    def price_fuel(self) -> float:
         return self.__price_fuel
 
-    def get_litre(self) -> float:
+    @property
+    def litre(self) -> float:
         return self.__litre
 
-    def get_current_litre(self) -> float:
+    @property
+    def current_litre(self) -> float:
         return self.__current_litre
 
+    @property
     def is_completed(self) -> bool:
         return self.__current_litre >= self.__litre
 
@@ -128,42 +142,47 @@ class GasStation(object):
         self.__orders_list: List[Order] = []
         self.__price: Dict[str, float] = {}
 
-    def get_id(self):
+    @property
+    def id(self):
         return self.__extended_id
 
-    def get_columns_list(self) -> List[Column]:
+    @property
+    def columns_list(self) -> List[Column]:
         return self.__columns_list
+
+    @property
+    def price(self) -> Dict[str, float]:
+        return self.__price
+
+    @price.setter
+    def price(self, price: Dict[str, float]):
+        self.__price = price
+
+    @property
+    def orders_list(self) -> List[Order]:
+        return self.__orders_list
 
     def add_column(self, column_fuel_list: List[str]):
         self.__columns_list.append(Column(GasStation.next_column_id, column_fuel_list))
         GasStation.next_column_id += 1
-
-    def set_price(self, price: Dict[str, float]):
-        self.__price = price
-
-    def get_price(self) -> Dict[str, float]:
-        return self.__price
-
-    def get_orders_list(self) -> List[Order]:
-        return self.__orders_list
 
     def add_order(self, order: Order):
         self.__orders_list.append(order)
 
     def remove_order(self, order_id: int):
         for order in self.__orders_list:
-            if order.get_id() == order_id:
+            if order.id == order_id:
                 self.__orders_list.remove(order)
                 return
 
     def is_order_exist(self, order_id: int) -> bool:
-        return any(order.get_id() == order_id for order in self.__orders_list)
+        return any(order.id == order_id for order in self.__orders_list)
 
     def is_order_price_valid(self, order: Order) -> bool:
         # Проверка на соответствие цены в прайсе и в заказе
-        return self.__price[order.get_fuel_id()] == order.get_price_fuel()
+        return self.__price[order.fuel_id] == order.price_fuel
 
     def is_order_supported(self, order: Order) -> bool:
         # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
-        return any(order.get_column_id() == column.get_id() and
-                   order.get_fuel_id() in column.get_fuel_list() for column in self.__columns_list)
+        return any(order.column_id == column.id and
+                   order.fuel_id in column.fuel_list for column in self.__columns_list)
