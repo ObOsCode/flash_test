@@ -79,6 +79,7 @@ class Order(object):
         # Текущее значение залитого топлива
         self.__current_litre = 0
 
+    # TODO Доступ к свойствам сделать через декораторы
     def get_id(self) -> int:
         return self.__id
 
@@ -112,6 +113,10 @@ class Order(object):
             self.__current_litre = self.__litre
             return
         self.__current_litre += self.__FUELING_STEP_LITRE
+
+    def __str__(self):
+        # TODO переопределить str для вывода в консоль
+        return "Order id: " + str(self.__id)
 
 
 class GasStation(object):
