@@ -184,12 +184,12 @@ class GasStation(object):
     def is_order_exist(self, order_id: int) -> bool:
         return any(order.id == order_id for order in self.__orders_list)
 
+    # Проверка на соответствие цены в прайсе и в заказе
     def is_order_price_valid(self, order: Order) -> bool:
-        # Проверка на соответствие цены в прайсе и в заказе
         return self.__price[order.fuel_id] == order.price_fuel
 
+    # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
     def is_order_supported(self, order: Order) -> bool:
-        # Если есть колонка с таким id как в заказе и в ней есть топливо как в заказе
         return any(order.column_id == column.id and order.fuel_id in column.fuel_list for column in self.__columns_list)
 
     def emulation_step(self):

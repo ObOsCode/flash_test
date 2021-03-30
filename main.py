@@ -8,7 +8,7 @@ from GasStation import GasStation, FuelType, Order, Column
 
 def exception_hook(exctype, value, traceback):
     if exctype == KeyboardInterrupt:
-        print("\n *** Программа завершена пользователем ***")
+        print("\n\n *** Программа завершена пользователем ***\n\n")
     else:
         sys.__excepthook__(exctype, value, traceback)
 
@@ -59,17 +59,18 @@ def update_orders_list(orders_list_data: []):
 
 def update_orders_status():
 
+    print("=============================================================")
     print("Обновляем статусы заказов...")
 
     for order in gas_station.orders_list:
 
-        # FOR TEST
+        # TEST
         # if not (order.id == 1875 or order.id == 1878):
         #     continue
 
-        print("***************************************************************")
-        print("*** Заказ: ", order, "***")
-        print("***************************************************************")
+        print("**************************************************************************************")
+        print("***  Заказ: ", order)
+        print("**************************************************************************************")
 
         if order.status == Order.STATUS_ACCEPT_ORDER:
             print(" Заказ ожидает подтверждения")
@@ -139,18 +140,16 @@ if __name__ == '__main__':
 
     # Создаем объект модели АЗС
     gas_station = GasStation(extended_id="00001")
+
     # Добавляем колонки
     gas_station.add_column([FuelType.A_80, FuelType.A_92, FuelType.A_95])
     gas_station.add_column([FuelType.A_92_PREMIUM, FuelType.A_95_PREMIUM])
+
     # Устанавливаем цены
     gas_station.price = {FuelType.DIESEL: 39.52, FuelType.A_80: 37.12}
 
     # Создаем объект для работы с API
     api = GasStationAPI(api_config.SERVER_ADDRESS, api_config.LOGIN, api_config.PASSWORD, api_config.DATE_FORMAT)
-
-    # Ошибки
-    # orders_report = api.load_orders_report()
-    # api.load_station_status("")
 
     # Главный цикл программы
     last_step_time = timestamp()
